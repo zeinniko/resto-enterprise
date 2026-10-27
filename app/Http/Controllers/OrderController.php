@@ -77,7 +77,7 @@ class OrderController extends Controller
                 'service_charge' => $subtotal * 0.05, // Default Service 5%
                 'discount_amount' => 0,
                 'grand_total' => $subtotal + ($subtotal * 0.15),
-                'payment_status' => 'UNPAID',
+                'payment_sstatustatus' => 'UNPAID',
             ]);
 
             foreach ($validated['items'] as $item) {

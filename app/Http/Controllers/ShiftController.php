@@ -60,7 +60,7 @@ class ShiftController extends Controller
             'final_cash_actual' => 'required|numeric|min:0',
         ]);
 
-        $totalSales = $shift->orders()->where('payment_status', 'PAID')->sum('grand_total');
+        $totalSales = $shift->orders()->where('status', 'PAID')->sum('grand_total');
         $expectedCash = $shift->initial_cash + $totalSales;
 
         $shift->update([

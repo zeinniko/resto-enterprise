@@ -17,7 +17,7 @@ class DashboardController extends Controller
         $branchId = $request->branch_id;
 
         $totalSales = Order::when($branchId, fn($q) => $q->where('branch_id', $branchId))
-            ->where('payment_status', 'PAID')
+            ->where('status', 'PAID')
             ->sum('grand_total');
 
         $totalOrders = Order::when($branchId, fn($q) => $q->where('branch_id', $branchId))->count();
