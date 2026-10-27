@@ -79,7 +79,7 @@ export default function OrdersIndex({ orders, branches, salesModes, tables, menu
                   <td className="py-3 px-4 font-semibold">{o.branch?.name}</td>
                   <td className="py-3 px-4"><span className="px-2 py-0.5 rounded bg-slate-100 font-bold">{o.salesMode?.name}</span></td>
                   <td className="py-3 px-4 font-bold">{o.table ? `Meja ${o.table.table_number}` : 'Takeaway'}</td>
-                  <td className="py-3 px-4 font-mono font-bold text-slate-900">Rp {Number(o.final_total).toLocaleString('id-ID')}</td>
+                  <td className="py-3 px-4 font-mono font-bold text-slate-900">Rp {Number(o.grand_total).toLocaleString('id-ID')}</td>
                   <td className="py-3 px-4">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                       o.status === 'SERVED' ? 'bg-emerald-50 text-emerald-700' :

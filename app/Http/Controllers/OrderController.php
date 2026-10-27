@@ -76,7 +76,7 @@ class OrderController extends Controller
                 'tax' => $subtotal * 0.10, // Default PBN 10%
                 'service_charge' => $subtotal * 0.05, // Default Service 5%
                 'discount_amount' => 0,
-                'final_total' => $subtotal + ($subtotal * 0.15),
+                'grand_total' => $subtotal + ($subtotal * 0.15),
                 'payment_status' => 'UNPAID',
             ]);
 

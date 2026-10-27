@@ -85,7 +85,7 @@ export default function Dashboard({ metrics, recentOrders }: Props) {
                   <td className="py-3 px-4 font-mono font-bold text-indigo-600">{o.order_number}</td>
                   <td className="py-3 px-4">{o.branch?.name}</td>
                   <td className="py-3 px-4"><span className="px-2 py-0.5 rounded bg-slate-100 font-bold">{o.salesMode?.name}</span></td>
-                  <td className="py-3 px-4 font-mono font-bold">Rp {Number(o.final_total).toLocaleString('id-ID')}</td>
+                  <td className="py-3 px-4 font-mono font-bold">Rp {Number(o.grand_total).toLocaleString('id-ID')}</td>
                 </tr>
               ))
             ) : (
