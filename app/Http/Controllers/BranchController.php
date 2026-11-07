@@ -23,10 +23,13 @@ class BranchController extends Controller
 
     public function store(Request $request)
     {
+        // Konversi nilai dari Frontend (Kapital) ke nilai Enum DB (headquarter, central_kitchen, outlet)
+        $this->normalizeTypeInput($request);
+
         $validated = $request->validate([
-            'code' => 'required|string|max:20|unique:branches,code',
+            'code' => 'required|string|max:20|unique:branches,code', // Diperbaiki: sku -> code
             'name' => 'required|string|max:255',
-            'type' => 'required|in:HQ,CENTRAL_KITCHEN,OUTLET',
+            'type' => 'required|in:headquarter,central_kitchen,outlet', // Sesuai Enum DB yang ada
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:30',
             'is_active' => 'required|boolean',
@@ -39,10 +42,13 @@ class BranchController extends Controller
 
     public function update(Request $request, Branch $branch)
     {
+        // Konversi nilai dari Frontend (Kapital) ke nilai Enum DB
+        $this->normalizeTypeInput($request);
+
         $validated = $request->validate([
-            'code' => 'required|string|max:20|unique:branches,code,' . $branch->id,
+            'code' => 'required|string|max:20|unique:branches,code,' . $branch->id, // Diperbaiki: sku -> code
             'name' => 'required|string|max:255',
-            'type' => 'required|in:HQ,CENTRAL_KITCHEN,OUTLET',
+            'type' => 'required|in:headquarter,central_kitchen,outlet',
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:30',
             'is_active' => 'required|boolean',
@@ -57,5 +63,21 @@ class BranchController extends Controller
     {
         $branch->delete();
         return redirect()->back()->with('success', 'Cabang berhasil dihapus.');
+    }
+
+    /**
+     * Helper untuk memetakan input type dari UI ke format enum DB
+     */
+    private function normalizeTypeInput(Request $request): void
+    {
+        $typeMap = [
+            'HQ' => 'headquarter',
+            'CENTRAL_KITCHEN' => 'central_kitchen',
+            'OUTLET' => 'outlet',
+        ];
+
+        if ($request->has('type') && isset($typeMap[$request->type])) {
+            $request->merge(['type' => $typeMap[$request->type]]);
+        }
     }
 }

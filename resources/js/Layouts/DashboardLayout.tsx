@@ -52,8 +52,8 @@ const navigationMenu: NavSection[] = [
         title: 'Parameter Inventaris',
         icon: Boxes,
         children: [
-          { title: 'Kategori Item', href: '/categories' },
           { title: 'Satuan & Konversi', href: '/units' },
+          { title: 'Kategori Item', href: '/categories' },
           { title: 'Lokasi Penyimpanan', href: '/storage-locations' },
           { title: 'Master Supplier', href: '/suppliers' },
         ]

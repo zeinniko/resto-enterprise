@@ -28,7 +28,7 @@ class ChartOfAccountController extends Controller
     public function store(Request $request)
     {
         $validated =$request->validate([
-            'code' => 'required|string|max:30|unique:chart_of_accounts,code',
+            'code' => 'required|string|max:30|unique:chart_of_accounts,sku',
             'name' => 'required|string|max:255',
             'type' => 'required|in:ASSET,LIABILITY,EQUITY,REVENUE,EXPENSE',
             'normal_balance' => 'required|in:DEBIT,CREDIT',
@@ -43,7 +43,7 @@ class ChartOfAccountController extends Controller
     public function update(Request $request, ChartOfAccount$chartOfAccount)
     {
         $validated =$request->validate([
-            'code' => 'required|string|max:30|unique:chart_of_accounts,code,' . $chartOfAccount->id,
+            'sku' => 'required|string|max:30|unique:chart_of_accounts,sku,' . $chartOfAccount->id,
             'name' => 'required|string|max:255',
             'type' => 'required|in:ASSET,LIABILITY,EQUITY,REVENUE,EXPENSE',
             'normal_balance' => 'required|in:DEBIT,CREDIT',

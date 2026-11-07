@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, router, useForm } from '@inertiajs/react';
-import { 
+import {
   Plus, Search, Edit3, Trash2, X, Save, UtensilsCrossed, Layers, Trash, BookOpen
 } from 'lucide-react';
 
@@ -41,7 +41,13 @@ interface Props {
   filters: { search?: string };
 }
 
-export default function RecipesIndex({ recipes, availableMenuItems, rawItems, units, filters }: Props) {
+export default function RecipesIndex({
+  recipes = { data: [], links: [], total: 0 },
+  availableMenuItems = [],
+  rawItems = [],
+  units = [],
+  filters
+}: Props) {
   const [search, setSearch] = useState(filters.search || '');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
@@ -100,7 +106,7 @@ export default function RecipesIndex({ recipes, availableMenuItems, rawItems, un
   const handleItemChange = (index: number, field: string, value: any) => {
     const updated = [...data.items];
     updated[index] = { ...updated[index], [field]: value };
-    
+
     // Auto populate unit_id jika memilih item
     if (field === 'item_id') {
       const selectedRaw = rawItems.find(r => r.id === Number(value));

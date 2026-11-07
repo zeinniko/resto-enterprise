@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import ItemModal from './ItemModal';
 import { Head, router } from '@inertiajs/react';
-import { 
+import {
   Plus, Search, Boxes, Edit3, Trash2, Tag
 } from 'lucide-react';
 
@@ -34,10 +34,15 @@ interface Props {
   filters: { search?: string; category_id?: string };
 }
 
-export default function ItemsIndex({ items, categories, units, filters }: Props) {
+export default function ItemsIndex({
+  items = { data: [], links: [], total: 0 },
+  categories = [],
+  units = [],
+  filters
+}: Props) {
   const [search, setSearch] = useState(filters.search || '');
   const [selectedCategory, setSelectedCategory] = useState(filters.category_id || '');
-  
+
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -80,7 +85,7 @@ export default function ItemsIndex({ items, categories, units, filters }: Props)
             Kelola katalog bahan baku, setengah jadi, dan barang operasional terpusat.
           </p>
         </div>
-        <button 
+        <button
           onClick={handleCreateNew}
           className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-lg transition-colors shadow-sm shadow-indigo-200"
         >
@@ -162,13 +167,13 @@ export default function ItemsIndex({ items, categories, units, filters }: Props)
                     </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => handleEdit(item)}
                           className="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100"
                         >
                           <Edit3 size={15} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(item)}
                           className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-slate-100"
                         >
@@ -202,11 +207,10 @@ export default function ItemsIndex({ items, categories, units, filters }: Props)
                 disabled={!link.url}
                 onClick={() => link.url && router.get(link.url)}
                 dangerouslySetInnerHTML={{ __html: link.label }}
-                className={`px-2.5 py-1 text-xs rounded transition-colors ${
-                  link.active 
-                    ? 'bg-indigo-600 text-white font-medium' 
+                className={`px-2.5 py-1 text-xs rounded transition-colors ${link.active
+                    ? 'bg-indigo-600 text-white font-medium'
                     : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40'
-                }`}
+                  }`}
               />
             ))}
           </div>

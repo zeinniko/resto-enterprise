@@ -11,7 +11,7 @@ class SalesModeController extends Controller
     {
         $salesModes = SalesMode::when($request->search, function ($q) use ($request) {
             $q->where('name', 'like', "%{$request->search}%")
-              ->orWhere('code', 'like', "%{$request->search}%");
+              ->orWhere('sku', 'like', "%{$request->search}%");
         })->latest()->paginate(10)->withQueryString();
 
         return Inertia::render('SalesModes/Index', [
@@ -23,7 +23,7 @@ class SalesModeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:30|unique:sales_modes,code',
+            'sku' => 'required|string|max:30|unique:sales_modes,sku',
             'name' => 'required|string|max:255',
             'markup_percentage' => 'required|numeric|min:0',
             'is_active' => 'required|boolean',
@@ -37,7 +37,7 @@ class SalesModeController extends Controller
     public function update(Request $request, SalesMode $salesMode)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:30|unique:sales_modes,code,' . $salesMode->id,
+            'sku' => 'required|string|max:30|unique:sales_modes,sku,' . $salesMode->id,
             'name' => 'required|string|max:255',
             'markup_percentage' => 'required|numeric|min:0',
             'is_active' => 'required|boolean',

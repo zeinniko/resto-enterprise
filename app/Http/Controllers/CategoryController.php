@@ -32,7 +32,7 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:INGREDIENT,MENU,ASSET',
+            'type' => 'required|in:raw_material,semi_finished,packaging,non_food',
         ]);
 
         Category::create($validated);
@@ -44,7 +44,7 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:INGREDIENT,MENU,ASSET',
+            'type' => 'required|in:raw_material,semi_finished,packaging,non_food',
         ]);
 
         $category->update($validated);
@@ -55,7 +55,9 @@ class CategoryController extends Controller
     public function destroy(Category $category)
     {
         if ($category->items()->exists()) {
-            return redirect()->back()->withErrors(['message' => 'Kategori tidak dapat dihapus karena masih digunakan oleh SKU Item.']);
+            return redirect()->back()->withErrors([
+                'message' => 'Kategori tidak dapat dihapus karena masih digunakan oleh SKU Item.'
+            ]);
         }
 
         $category->delete();

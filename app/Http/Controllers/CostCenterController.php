@@ -13,7 +13,7 @@ class CostCenterController extends Controller
     {
         $costCenters = CostCenter::with('branch')
             ->when($request->search, function ($q) use ($request) {
-                $q->where('code', 'like', "%{$request->search}%")
+                $q->where('sku', 'like', "%{$request->search}%")
                   ->orWhere('name', 'like', "%{$request->search}%");
             })
             ->latest()
@@ -22,7 +22,7 @@ class CostCenterController extends Controller
 
         return Inertia::render('CostCenters/Index', [
             'costCenters' => $costCenters,
-            'branches' => Branch::where('is_active', true)->select('id', 'name', 'code')->get(),
+            'branches' => Branch::where('is_active', true)->select('id', 'name', 'sku')->get(),
             'filters' => $request->only(['search']),
         ]);
     }
@@ -31,7 +31,7 @@ class CostCenterController extends Controller
     {
         $validated = $request->validate([
             'branch_id' => 'required|exists:branches,id',
-            'code' => 'required|string|max:30|unique:cost_centers,code',
+            'sku' => 'required|string|max:30|unique:cost_centers,sku',
             'name' => 'required|string|max:255',
             'is_active' => 'required|boolean',
         ]);
@@ -45,7 +45,7 @@ class CostCenterController extends Controller
     {
         $validated = $request->validate([
             'branch_id' => 'required|exists:branches,id',
-            'code' => 'required|string|max:30|unique:cost_centers,code,' . $costCenter->id,
+            'sku' => 'required|string|max:30|unique:cost_centers,sku,' . $costCenter->id,
             'name' => 'required|string|max:255',
             'is_active' => 'required|boolean',
         ]);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, router, useForm } from '@inertiajs/react';
 import { 
-  Plus, Search, Edit3, Trash2, X, Save, Warehouse, Building2, Snowflake, Thermometer, Sun
+  Plus, Search, Edit3, Trash2, X, Save, Warehouse, Building2, Snowflake, Thermometer, Sun, Monitor
 } from 'lucide-react';
 
 interface Branch {
@@ -15,22 +15,26 @@ interface StorageLocation {
   id: number;
   branch_id: number;
   name: string;
-  type: 'DRY' | 'CHILLER' | 'FREEZER';
+  type: 'dry' | 'cold' | 'freezer' | 'display';
   is_active: boolean;
   branch?: Branch;
 }
 
 interface Props {
-  storageLocations: {
+  storageLocations?: {
     data: StorageLocation[];
     links: { url: string | null; label: string; active: boolean }[];
     total: number;
   };
-  branches: Branch[];
+  branches?: Branch[];
   filters: { search?: string; branch_id?: string };
 }
 
-export default function StorageLocationsIndex({ storageLocations, branches, filters }: Props) {
+export default function StorageLocationsIndex({ 
+  storageLocations = { data: [], links: [], total: 0 }, 
+  branches = [], 
+  filters 
+}: Props) {
   const [search, setSearch] = useState(filters.search || '');
   const [selectedBranch, setSelectedBranch] = useState(filters.branch_id || '');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,7 +43,7 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
   const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
     branch_id: '',
     name: '',
-    type: 'DRY',
+    type: 'dry' as StorageLocation['type'],
     is_active: true,
   });
 
@@ -54,18 +58,18 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
   };
 
   const handleOpenModal = (loc: StorageLocation | null = null) => {
+    clearErrors();
     setEditingLocation(loc);
     if (loc) {
       setData({
         branch_id: String(loc.branch_id),
         name: loc.name,
         type: loc.type,
-        is_active: loc.is_active,
+        is_active: Boolean(loc.is_active),
       });
     } else {
       reset();
     }
-    clearErrors();
     setIsModalOpen(true);
   };
 
@@ -94,6 +98,39 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
     }
   };
 
+  const getTypeBadge = (type: StorageLocation['type']) => {
+    switch (type) {
+      case 'dry':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+            <Sun size={11} /> DRY STORAGE
+          </span>
+        );
+      case 'cold':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+            <Thermometer size={11} /> COLD / CHILLER
+          </span>
+        );
+      case 'freezer':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+            <Snowflake size={11} /> FREEZER
+          </span>
+        );
+      case 'display':
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+            <Monitor size={11} /> DISPLAY / ETALASE
+          </span>
+        );
+      default:
+        return type;
+    }
+  };
+
+  const listLocations = Array.isArray(storageLocations?.data) ? storageLocations.data : [];
+
   return (
     <DashboardLayout>
       <Head title="Lokasi Penyimpanan" />
@@ -103,7 +140,7 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Lokasi Penyimpanan (Gudang)</h1>
           <p className="text-xs text-slate-500 mt-1">
-            Pengelompokan area penyimpanan barang per cabang (Dry, Chiller, Freezer).
+            Pengelompokan area penyimpanan barang per cabang (Dry, Cold, Freezer, Display).
           </p>
         </div>
         <button
@@ -131,7 +168,7 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
         <select
           value={selectedBranch}
           onChange={(e) => handleBranchChange(e.target.value)}
-          className="w-full sm:w-60 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 font-medium"
+          className="w-full sm:w-60 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer"
         >
           <option value="">Semua Cabang</option>
           {branches.map((b) => (
@@ -153,8 +190,8 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-            {storageLocations.data.length > 0 ? (
-              storageLocations.data.map((loc) => (
+            {listLocations.length > 0 ? (
+              listLocations.map((loc) => (
                 <tr key={loc.id} className="hover:bg-slate-50/60 transition-colors">
                   <td className="py-3 px-4 font-semibold text-slate-800">
                     <div className="flex items-center gap-1.5">
@@ -162,41 +199,21 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
                       <span>{loc.branch?.name || '-'}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 font-semibold text-slate-900">{loc.name}</td>
+                  <td className="py-3 px-4 font-bold text-slate-900">{loc.name}</td>
+                  <td className="py-3 px-4">{getTypeBadge(loc.type)}</td>
                   <td className="py-3 px-4">
-                    {loc.type === 'DRY' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                        <Sun size={11} /> DRY STORAGE
-                      </span>
-                    )}
-                    {loc.type === 'CHILLER' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
-                        <Thermometer size={11} /> CHILLER (0°C - 4°C)
-                      </span>
-                    )}
-                    {loc.type === 'FREEZER' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        <Snowflake size={11} /> FREEZER (&lt; -18°C)
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4">
-                    {loc.is_active ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                        Aktif
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-600 border border-rose-200">
-                        Non-Aktif
-                      </span>
-                    )}
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                      loc.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
+                    }`}>
+                      {loc.is_active ? 'Aktif' : 'Non-Aktif'}
+                    </span>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => handleOpenModal(loc)} className="p-1 text-slate-400 hover:text-indigo-600 rounded hover:bg-slate-100">
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => handleOpenModal(loc)} className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-100">
                         <Edit3 size={15} />
                       </button>
-                      <button onClick={() => handleDelete(loc)} className="p-1 text-slate-400 hover:text-rose-600 rounded hover:bg-slate-100">
+                      <button onClick={() => handleDelete(loc)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-100">
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -207,7 +224,7 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
               <tr>
                 <td colSpan={5} className="py-8 text-center text-slate-400">
                   <Warehouse size={32} className="mx-auto mb-2 opacity-50" />
-                  Belum ada lokasi penyimpanan terdaftar.
+                  Belum ada lokasi penyimpanan terdaftar. Silakan tambah data baru.
                 </td>
               </tr>
             )}
@@ -234,14 +251,14 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
                 <select
                   value={data.branch_id}
                   onChange={(e) => setData('branch_id', e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:border-indigo-500 font-medium"
                 >
                   <option value="">Pilih Cabang</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>[{b.code}] {b.name}</option>
                   ))}
                 </select>
-                {errors.branch_id && <p className="text-[10px] text-rose-500 mt-1">{errors.branch_id}</p>}
+                {errors.branch_id && <p className="text-[10px] text-rose-600 mt-1">{errors.branch_id}</p>}
               </div>
 
               <div>
@@ -250,40 +267,53 @@ export default function StorageLocationsIndex({ storageLocations, branches, filt
                   type="text"
                   value={data.name}
                   onChange={(e) => setData('name', e.target.value)}
-                  placeholder="misal: Chiller Dapur Utama"
+                  placeholder="misal: Chiller Main, Walk-in Freezer, Bar Storage"
                   className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:border-indigo-500"
                 />
-                {errors.name && <p className="text-[10px] text-rose-500 mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-[10px] text-rose-600 mt-1">{errors.name}</p>}
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Tipe Suhu / Ruangan *</label>
                 <select
                   value={data.type}
-                  onChange={(e) => setData('type', e.target.value as any)}
-                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:border-indigo-500"
+                  onChange={(e) => setData('type', e.target.value as StorageLocation['type'])}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:outline-none focus:border-indigo-500 font-medium"
                 >
-                  <option value="DRY">DRY STORAGE (Suhu Ruangan)</option>
-                  <option value="CHILLER">CHILLER (0°C s/d 4°C)</option>
-                  <option value="FREEZER">FREEZER (&lt; -18°C)</option>
+                  <option value="dry">DRY STORAGE (Suhu Ruangan)</option>
+                  <option value="cold">COLD STORAGE / CHILLER (0°C - 4°C)</option>
+                  <option value="freezer">FREEZER (&lt; -18°C)</option>
+                  <option value="display">DISPLAY / ETALASE DEPAN</option>
                 </select>
+                {errors.type && <p className="text-[10px] text-rose-600 mt-1">{errors.type}</p>}
               </div>
 
-              <div>
-                <label className="inline-flex items-center gap-2 cursor-pointer pt-2">
-                  <input
-                    type="checkbox"
-                    checked={data.is_active}
-                    onChange={(e) => setData('is_active', e.target.checked)}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                  />
-                  <span className="text-xs font-medium text-slate-700">Status Aktif</span>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="loc_is_active"
+                  checked={data.is_active}
+                  onChange={(e) => setData('is_active', e.target.checked)}
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                />
+                <label htmlFor="loc_is_active" className="text-xs font-medium text-slate-700 cursor-pointer">
+                  Status Lokasi Aktif
                 </label>
               </div>
 
               <div className="pt-4 border-t border-slate-200 flex justify-end gap-2">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium">Batal</button>
-                <button type="submit" disabled={processing} className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-medium">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={processing} 
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium shadow-sm"
+                >
                   <Save size={14} />
                   Simpan Lokasi
                 </button>

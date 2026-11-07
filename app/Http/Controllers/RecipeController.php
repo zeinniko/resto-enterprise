@@ -25,7 +25,6 @@ class RecipeController extends Controller
 
         $recipes = $query->latest()->paginate(10)->withQueryString();
 
-        // Ambil menu yang belum memiliki resep atau menu yang sedang diedit
         $availableMenuItems = MenuItem::whereDoesntHave('recipe')->select('id', 'name', 'code')->get();
         $rawItems = Item::with('primaryUnit')->where('is_active', true)->select('id', 'name', 'sku', 'primary_unit_id')->get();
         $units = Unit::select('id', 'name', 'symbol')->get();
@@ -47,10 +46,13 @@ class RecipeController extends Controller
             'instructions' => 'nullable|string',
             'is_active' => 'required|boolean',
             'items' => 'required|array|min:1',
-            'items.*.item_id' => 'required|exists:items,id',
+            'items.*.item_id' => 'required|exists:items,id|distinct', // Menutup celah item ganda
             'items.*.quantity' => 'required|numeric|gt:0',
             'items.*.unit_id' => 'required|exists:units,id',
             'items.*.waste_percentage' => 'nullable|numeric|min:0|max:100',
+        ], [
+            'items.*.item_id.distinct' => 'Item bahan baku tidak boleh dipilih ganda dalam 1 resep.',
+            'menu_item_id.unique' => 'Menu penjualan ini sudah memiliki racikan resep terdaftar.',
         ]);
 
         DB::transaction(function () use ($validated) {
@@ -81,10 +83,12 @@ class RecipeController extends Controller
             'instructions' => 'nullable|string',
             'is_active' => 'required|boolean',
             'items' => 'required|array|min:1',
-            'items.*.item_id' => 'required|exists:items,id',
+            'items.*.item_id' => 'required|exists:items,id|distinct', // Menutup celah item ganda
             'items.*.quantity' => 'required|numeric|gt:0',
             'items.*.unit_id' => 'required|exists:units,id',
             'items.*.waste_percentage' => 'nullable|numeric|min:0|max:100',
+        ], [
+            'items.*.item_id.distinct' => 'Item bahan baku tidak boleh dipilih ganda dalam 1 resep.',
         ]);
 
         DB::transaction(function () use ($recipe, $validated) {

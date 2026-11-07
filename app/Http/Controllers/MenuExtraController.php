@@ -10,10 +10,13 @@ class MenuExtraController extends Controller
 {
     public function index(Request $request)
     {
-        $extras = MenuExtra::when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%"))
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+        $query = MenuExtra::query();
+
+        if ($request->search) {
+            $query->where('name', 'like', "%{$request->search}%");
+        }
+
+        $extras = $query->latest()->paginate(10)->withQueryString();
 
         return Inertia::render('MenuExtras/Index', [
             'extras' => $extras,
@@ -26,10 +29,11 @@ class MenuExtraController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'is_available' => 'required|boolean',
+            'is_active' => 'required|boolean', // Diperbaiki: is_available -> is_active
         ]);
 
         MenuExtra::create($validated);
+
         return redirect()->back()->with('success', 'Topping / Extra berhasil ditambahkan.');
     }
 
@@ -38,16 +42,18 @@ class MenuExtraController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'is_available' => 'required|boolean',
+            'is_active' => 'required|boolean', // Diperbaiki: is_available -> is_active
         ]);
 
         $menuExtra->update($validated);
+
         return redirect()->back()->with('success', 'Topping / Extra berhasil diperbarui.');
     }
 
     public function destroy(MenuExtra $menuExtra)
     {
         $menuExtra->delete();
+
         return redirect()->back()->with('success', 'Topping / Extra berhasil dihapus.');
     }
 }

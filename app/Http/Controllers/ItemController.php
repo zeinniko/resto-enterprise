@@ -14,17 +14,18 @@ class ItemController extends Controller
     {
         $query = Item::with(['category', 'primaryUnit', 'purchaseUnit']);
 
-        if ($request->search) {$query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "\%{$request->search}%")
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('name', 'like', "%{$request->search}%") // Diperbaiki: \% -> %
                   ->orWhere('sku', 'like', "%{$request->search}%");
             });
         }
 
         if ($request->category_id) {
-            $query->where('category_id',$request->category_id);
+            $query->where('category_id', $request->category_id);
         }
 
-        $items =$query->latest()->paginate(10)->withQueryString();
+        $items = $query->latest()->paginate(10)->withQueryString();
 
         return Inertia::render('Items/Index', [
             'items' => $items,
@@ -36,7 +37,7 @@ class ItemController extends Controller
 
     public function store(Request $request)
     {
-        $validated =$request->validate([
+        $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'sku' => 'required|string|max:50|unique:items,sku',
             'name' => 'required|string|max:255',
@@ -51,9 +52,9 @@ class ItemController extends Controller
         return redirect()->back()->with('success', 'SKU Item berhasil ditambahkan.');
     }
 
-    public function update(Request $request, Item$item)
+    public function update(Request $request, Item $item)
     {
-        $validated =$request->validate([
+        $validated = $request->validate([
             'category_id' => 'required|exists:categories,id',
             'sku' => 'required|string|max:50|unique:items,sku,' . $item->id,
             'name' => 'required|string|max:255',
@@ -70,6 +71,13 @@ class ItemController extends Controller
 
     public function destroy(Item $item)
     {
+        // Proteksi integritas data F&B Enterprise
+        if ($item->stockBatches()->where('current_qty', '>', 0)->exists() || $item->branchItems()->exists()) {
+            return redirect()->back()->withErrors([
+                'message' => 'SKU Item tidak dapat dihapus karena sudah memiliki riwayat stok atau terhubung dengan cabang.'
+            ]);
+        }
+
         $item->delete();
 
         return redirect()->back()->with('success', 'SKU Item berhasil dihapus.');

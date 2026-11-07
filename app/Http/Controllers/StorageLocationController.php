@@ -14,15 +14,14 @@ class StorageLocationController extends Controller
         $query = StorageLocation::with('branch');
 
         if ($request->search) {
-            $query->where('name', 'like', "%{$request->search}%");
+            $query->where('name', 'like', "\%{$request->search}%");
         }
 
         if ($request->branch_id) {
-            $query->where('branch_id', $request->branch_id);
+            $query->where('branch_id',$request->branch_id);
         }
 
-        $storageLocations = $query->latest()->paginate(10)->withQueryString();
-        $branches = Branch::select('id', 'name', 'code')->get();
+        $storageLocations = $query->latest()->paginate(10)->withQueryString();$branches = Branch::select('id', 'name', 'code')->get();
 
         return Inertia::render('StorageLocations/Index', [
             'storageLocations' => $storageLocations,
@@ -33,10 +32,10 @@ class StorageLocationController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated =$request->validate([
             'branch_id' => 'required|exists:branches,id',
             'name' => 'required|string|max:255',
-            'type' => 'required|in:DRY,CHILLER,FREEZER',
+            'type' => 'required|in:dry,cold,freezer,display',
             'is_active' => 'required|boolean',
         ]);
 
@@ -45,12 +44,12 @@ class StorageLocationController extends Controller
         return redirect()->back()->with('success', 'Lokasi penyimpanan berhasil ditambahkan.');
     }
 
-    public function update(Request $request, StorageLocation $storageLocation)
+    public function update(Request $request, StorageLocation$storageLocation)
     {
-        $validated = $request->validate([
+        $validated =$request->validate([
             'branch_id' => 'required|exists:branches,id',
             'name' => 'required|string|max:255',
-            'type' => 'required|in:DRY,CHILLER,FREEZER',
+            'type' => 'required|in:dry,cold,freezer,display',
             'is_active' => 'required|boolean',
         ]);
 

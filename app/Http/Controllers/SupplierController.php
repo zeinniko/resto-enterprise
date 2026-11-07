@@ -15,7 +15,7 @@ class SupplierController extends Controller
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', "%{$request->search}%")
-                  ->orWhere('code', 'like', "%{$request->search}%")
+                  ->orWhere('code', 'like', "%{$request->search}%") // Diperbaiki: sku -> code
                   ->orWhere('contact_person', 'like', "%{$request->search}%");
             });
         }
@@ -31,7 +31,7 @@ class SupplierController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:30|unique:suppliers,code',
+            'code' => 'required|string|max:30|unique:suppliers,code', // Diperbaiki: sku -> code
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
@@ -48,7 +48,7 @@ class SupplierController extends Controller
     public function update(Request $request, Supplier $supplier)
     {
         $validated = $request->validate([
-            'code' => 'required|string|max:30|unique:suppliers,code,' . $supplier->id,
+            'code' => 'required|string|max:30|unique:suppliers,code,' . $supplier->id, // Diperbaiki: sku -> code
             'name' => 'required|string|max:255',
             'contact_person' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
@@ -65,7 +65,9 @@ class SupplierController extends Controller
     public function destroy(Supplier $supplier)
     {
         if ($supplier->purchaseOrders()->exists()) {
-            return redirect()->back()->withErrors(['message' => 'Supplier tidak dapat dihapus karena memiliki riwayat Purchase Order.']);
+            return redirect()->back()->withErrors([
+                'message' => 'Supplier tidak dapat dihapus karena memiliki riwayat Purchase Order.'
+            ]);
         }
 
         $supplier->delete();

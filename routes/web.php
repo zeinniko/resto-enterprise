@@ -57,6 +57,8 @@ Route::get('/units', [UnitController::class, 'index'])->name('units.index');
 Route::post('/units', [UnitController::class, 'store'])->name('units.store');
 Route::put('/units/{unit}', [UnitController::class, 'update'])->name('units.update');
 Route::delete('/units/{unit}', [UnitController::class, 'destroy'])->name('units.destroy');
+Route::post('/unit-conversions', [UnitController::class, 'storeConversion'])->name('unit-conversions.store');
+Route::delete('/unit-conversions/{conversion}', [UnitController::class, 'destroyConversion'])->name('unit-conversions.destroy');
 
 Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
 Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
@@ -193,6 +195,8 @@ Route::put('/branch-users/{user}', [BranchUserController::class, 'update'])->nam
 
 Route::get('/branch-items', [BranchItemController::class, 'index'])->name('branch-items.index');
 Route::post('/branch-items', [BranchItemController::class, 'store'])->name('branch-items.store');
+Route::put('/branch-items/{branchItem}', [BranchItemController::class, 'update'])->name('branch-items.update');
+Route::delete('/branch-items/{branchItem}', [BranchItemController::class, 'destroy'])->name('branch-items.destroy');
 
 // Menu Packages
 Route::get('/menu-packages', [MenuPackageController::class, 'index'])->name('menu-packages.index');

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import DashboardLayout from '@/Layouts/DashboardLayout';
 import { Head, router, useForm } from '@inertiajs/react';
-import { 
-  Plus, Search, Edit3, Trash2, X, Save, Truck, Phone, Mail, MapPin, Clock 
+import {
+  Plus, Search, Edit3, Trash2, X, Save, Truck, Phone, Mail, MapPin, Clock
 } from 'lucide-react';
 
 interface Supplier {
@@ -25,7 +25,10 @@ interface Props {
   filters: { search?: string };
 }
 
-export default function SuppliersIndex({ suppliers, filters }: Props) {
+export default function SuppliersIndex({
+  suppliers = { data: [], links: [], total: 0 },
+  filters
+}: Props) {
   const [search, setSearch] = useState(filters.search || '');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
