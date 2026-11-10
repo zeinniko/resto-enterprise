@@ -30,9 +30,4 @@ class ChartOfAccount extends Model
     {
         return $this->hasMany(ChartOfAccount::class, 'parent_id');
     }
-
-    public function journalEntries()
-    {
-        return $this->hasMany(JournalEntry::class);
-    }
 }

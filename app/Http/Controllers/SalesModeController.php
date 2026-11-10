@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\SalesMode;
@@ -11,7 +12,7 @@ class SalesModeController extends Controller
     {
         $salesModes = SalesMode::when($request->search, function ($q) use ($request) {
             $q->where('name', 'like', "%{$request->search}%")
-              ->orWhere('sku', 'like', "%{$request->search}%");
+              ->orWhere('code', 'like', "%{$request->search}%");
         })->latest()->paginate(10)->withQueryString();
 
         return Inertia::render('SalesModes/Index', [
@@ -23,10 +24,12 @@ class SalesModeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'sku' => 'required|string|max:30|unique:sales_modes,sku',
+            'code' => 'required|string|max:30|unique:sales_modes,code',
             'name' => 'required|string|max:255',
-            'markup_percentage' => 'required|numeric|min:0',
+            'markup_percentage' => 'required|numeric|min:0|max:100',
             'is_active' => 'required|boolean',
+        ], [
+            'code.unique' => 'Kode Sales Mode ini sudah terdaftar.',
         ]);
 
         SalesMode::create($validated);
@@ -37,10 +40,12 @@ class SalesModeController extends Controller
     public function update(Request $request, SalesMode $salesMode)
     {
         $validated = $request->validate([
-            'sku' => 'required|string|max:30|unique:sales_modes,sku,' . $salesMode->id,
+            'code' => 'required|string|max:30|unique:sales_modes,code,' . $salesMode->id,
             'name' => 'required|string|max:255',
-            'markup_percentage' => 'required|numeric|min:0',
+            'markup_percentage' => 'required|numeric|min:0|max:100',
             'is_active' => 'required|boolean',
+        ], [
+            'code.unique' => 'Kode Sales Mode ini sudah terdaftar.',
         ]);
 
         $salesMode->update($validated);
@@ -51,6 +56,7 @@ class SalesModeController extends Controller
     public function destroy(SalesMode $salesMode)
     {
         $salesMode->delete();
+
         return redirect()->back()->with('success', 'Mode Penjualan berhasil dihapus.');
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Branch;
 use App\Models\CostCenter;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,18 +10,16 @@ class CostCenterController extends Controller
 {
     public function index(Request $request)
     {
-        $costCenters = CostCenter::with('branch')
-            ->when($request->search, function ($q) use ($request) {
-                $q->where('sku', 'like', "%{$request->search}%")
-                  ->orWhere('name', 'like', "%{$request->search}%");
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+        $costCenters = CostCenter::when($request->search, function ($q) use ($request) {
+            $q->where('code', 'like', "%{$request->search}%")
+              ->orWhere('name', 'like', "%{$request->search}%");
+        })
+        ->latest()
+        ->paginate(10)
+        ->withQueryString();
 
         return Inertia::render('CostCenters/Index', [
             'costCenters' => $costCenters,
-            'branches' => Branch::where('is_active', true)->select('id', 'name', 'sku')->get(),
             'filters' => $request->only(['search']),
         ]);
     }
@@ -30,10 +27,11 @@ class CostCenterController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'branch_id' => 'required|exists:branches,id',
-            'sku' => 'required|string|max:30|unique:cost_centers,sku',
+            'code' => 'required|string|max:30|unique:cost_centers,code',
             'name' => 'required|string|max:255',
             'is_active' => 'required|boolean',
+        ], [
+            'code.unique' => 'Kode Cost Center ini sudah terdaftar.',
         ]);
 
         CostCenter::create($validated);
@@ -44,10 +42,11 @@ class CostCenterController extends Controller
     public function update(Request $request, CostCenter $costCenter)
     {
         $validated = $request->validate([
-            'branch_id' => 'required|exists:branches,id',
-            'sku' => 'required|string|max:30|unique:cost_centers,sku,' . $costCenter->id,
+            'code' => 'required|string|max:30|unique:cost_centers,code,' . $costCenter->id,
             'name' => 'required|string|max:255',
             'is_active' => 'required|boolean',
+        ], [
+            'code.unique' => 'Kode Cost Center ini sudah terdaftar.',
         ]);
 
         $costCenter->update($validated);
@@ -58,6 +57,7 @@ class CostCenterController extends Controller
     public function destroy(CostCenter $costCenter)
     {
         $costCenter->delete();
+
         return redirect()->back()->with('success', 'Cost Center berhasil dihapus.');
     }
 }

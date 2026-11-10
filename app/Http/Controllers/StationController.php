@@ -18,10 +18,11 @@ class StationController extends Controller
         }
 
         $stations = $query->latest()->paginate(10)->withQueryString();
+        $branches = Branch::where('is_active', true)->select('id', 'name', 'code')->get();
 
         return Inertia::render('Stations/Index', [
             'stations' => $stations,
-            'branches' => Branch::where('is_active', true)->select('id', 'name', 'code')->get(),
+            'branches' => $branches,
             'filters' => $request->only(['search']),
         ]);
     }
@@ -57,6 +58,7 @@ class StationController extends Controller
     public function destroy(Station $station)
     {
         $station->delete();
+
         return redirect()->back()->with('success', 'Station Dapur berhasil dihapus.');
     }
 }

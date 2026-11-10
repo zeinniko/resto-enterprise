@@ -109,6 +109,7 @@ Route::post('/stock-counts/{stockCount}/approve', [StockCountController::class, 
 /* 4. POS & OPERASIONAL */
 Route::get('/floors-tables', [FloorTableController::class, 'index'])->name('floors-tables.index');
 Route::post('/floors', [FloorTableController::class, 'storeFloor'])->name('floors.store');
+Route::delete('/floors', [FloorTableController::class, 'destroyFloor'])->name('floors.destroy');
 Route::post('/tables', [FloorTableController::class, 'storeTable'])->name('tables.store');
 Route::patch('/tables/{table}/status', [FloorTableController::class, 'updateTableStatus'])->name('tables.update-status');
 
@@ -205,6 +206,8 @@ Route::post('/menu-packages', [MenuPackageController::class, 'store'])->name('me
 // Cancel Reasons & Discounts
 Route::get('/cancel-reasons', [CancelReasonController::class, 'index'])->name('cancel-reasons.index');
 Route::post('/cancel-reasons', [CancelReasonController::class, 'store'])->name('cancel-reasons.store');
+Route::put('/cancel-reasons/{reasons}', [CancelReasonController::class, 'update'])->name('cancel-reasons.update');
+Route::delete('/cancel-reasons/{reasons}', [CancelReasonController::class, 'destroy'])->name('cancel-reasons.destroy');
 
 Route::get('/discounts', [DiscountController::class, 'index'])->name('discounts.index');
 Route::post('/discounts', [DiscountController::class, 'store'])->name('discounts.store');

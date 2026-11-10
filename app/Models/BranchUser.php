@@ -12,6 +12,7 @@ class BranchUser extends Model
     protected $fillable = [
         'branch_id',
         'user_id',
+        'role',
     ];
 
     public function branch()

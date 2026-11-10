@@ -10,18 +10,50 @@ class CancelReasonController extends Controller
 {
     public function index(Request $request)
     {
-        $reasons = CancelReason::latest()->paginate(10);
-        return Inertia::render('CancelReasons/Index', ['reasons' => $reasons]);
+        $query = CancelReason::query();
+
+        if ($request->search) {
+            $query->where('reason', 'like', "%{$request->search}%");
+        }
+
+        $reasons = $query->latest()->paginate(10)->withQueryString();
+
+        return Inertia::render('CancelReasons/Index', [
+            'reasons' => $reasons,
+            'filters' => $request->only(['search']),
+        ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'reason' => 'required|string|max:255',
-            'requires_approval' => 'required|boolean',
+            'type' => 'required|in:ORDER_CANCEL,ITEM_VOID',
+            'is_active' => 'required|boolean',
         ]);
 
         CancelReason::create($validated);
-        return redirect()->back()->with('success', 'Alasan void berhasil ditambahkan.');
+
+        return redirect()->back()->with('success', 'Alasan pembatalan berhasil ditambahkan.');
+    }
+
+    public function update(Request $request, CancelReason $cancelReason)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:255',
+            'type' => 'required|in:ORDER_CANCEL,ITEM_VOID',
+            'is_active' => 'required|boolean',
+        ]);
+
+        $cancelReason->update($validated);
+
+        return redirect()->back()->with('success', 'Alasan pembatalan berhasil diperbarui.');
+    }
+
+    public function destroy(CancelReason $cancelReason)
+    {
+        $cancelReason->delete();
+
+        return redirect()->back()->with('success', 'Alasan pembatalan berhasil dihapus.');
     }
 }

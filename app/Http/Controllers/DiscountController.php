@@ -10,8 +10,10 @@ class DiscountController extends Controller
 {
     public function index(Request $request)
     {
-        $discounts = Discount::when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%"))
-            ->latest()->paginate(10)->withQueryString();
+        $discounts = Discount::when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Discounts/Index', [
             'discounts' => $discounts,
@@ -23,12 +25,22 @@ class DiscountController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:PERCENTAGE,FIXED',
-            'value' => 'required|numeric|min:0',
+            'type' => 'required|in:PERCENTAGE,FIXED_AMOUNT',
+            'value' => [
+                'required',
+                'numeric',
+                'min:0',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->type === 'PERCENTAGE' && $value > 100) {
+                        $fail('Diskon persentase tidak boleh melebihi 100%.');
+                    }
+                },
+            ],
             'is_active' => 'required|boolean',
         ]);
 
         Discount::create($validated);
+
         return redirect()->back()->with('success', 'Diskon berhasil ditambahkan.');
     }
 
@@ -36,18 +48,29 @@ class DiscountController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:PERCENTAGE,FIXED',
-            'value' => 'required|numeric|min:0',
+            'type' => 'required|in:PERCENTAGE,FIXED_AMOUNT',
+            'value' => [
+                'required',
+                'numeric',
+                'min:0',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->type === 'PERCENTAGE' && $value > 100) {
+                        $fail('Diskon persentase tidak boleh melebihi 100%.');
+                    }
+                },
+            ],
             'is_active' => 'required|boolean',
         ]);
 
         $discount->update($validated);
+
         return redirect()->back()->with('success', 'Diskon berhasil diperbarui.');
     }
 
     public function destroy(Discount $discount)
     {
         $discount->delete();
+
         return redirect()->back()->with('success', 'Diskon berhasil dihapus.');
     }
 }
