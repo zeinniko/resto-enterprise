@@ -25,12 +25,12 @@ class Payroll extends Model
     ];
 
     protected $casts = [
-        'basic_salary' => 'decimal:2',
-        'overtime_pay' => 'decimal:2',
+        'basic_salary'         => 'decimal:2',
+        'overtime_pay'         => 'decimal:2',
         'service_charge_bonus' => 'decimal:2',
-        'deductions' => 'decimal:2',
-        'net_salary' => 'decimal:2',
-        'paid_at' => 'datetime',
+        'deductions'           => 'decimal:2',
+        'net_salary'           => 'decimal:2',
+        'paid_at'              => 'datetime',
     ];
 
     public function employee()
@@ -51,5 +51,10 @@ class Payroll extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function journals()
+    {
+        return $this->morphMany(Journal::class, 'reference');
     }
 }

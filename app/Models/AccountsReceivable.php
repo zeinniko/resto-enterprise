@@ -19,13 +19,18 @@ class AccountsReceivable extends Model
     ];
 
     protected $casts = [
-        'total_amount' => 'decimal:2',
+        'total_amount'    => 'decimal:2',
         'received_amount' => 'decimal:2',
-        'due_date' => 'date',
+        'due_date'        => 'date',
     ];
 
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function journals()
+    {
+        return $this->morphMany(Journal::class, 'reference');
     }
 }

@@ -22,8 +22,8 @@ class AccountsPayable extends Model
 
     protected $casts = [
         'total_amount' => 'decimal:2',
-        'paid_amount' => 'decimal:2',
-        'due_date' => 'date',
+        'paid_amount'  => 'decimal:2',
+        'due_date'     => 'date',
     ];
 
     public function branch()
@@ -39,5 +39,10 @@ class AccountsPayable extends Model
     public function purchaseOrder()
     {
         return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    public function journals()
+    {
+        return $this->morphMany(Journal::class, 'reference');
     }
 }

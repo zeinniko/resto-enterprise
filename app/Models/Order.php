@@ -13,6 +13,7 @@ class Order extends Model
         'branch_id',
         'shift_id',
         'table_id',
+        'sales_mode_id',
         'order_number',
         'order_type',
         'status',
@@ -25,11 +26,11 @@ class Order extends Model
     ];
 
     protected $casts = [
-        'subtotal' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
+        'subtotal'              => 'decimal:2',
+        'discount_amount'       => 'decimal:2',
+        'tax_amount'            => 'decimal:2',
         'service_charge_amount' => 'decimal:2',
-        'grand_total' => 'decimal:2',
+        'grand_total'           => 'decimal:2',
     ];
 
     public function branch()
@@ -45,6 +46,11 @@ class Order extends Model
     public function table()
     {
         return $this->belongsTo(Table::class);
+    }
+
+    public function salesMode()
+    {
+        return $this->belongsTo(SalesMode::class);
     }
 
     public function user()
