@@ -17,32 +17,21 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $hasTableBranchId = Schema::hasColumn('tables', 'branch_id');
-        $hasTableFloorId  = Schema::hasColumn('tables', 'floor_id') && Schema::hasTable('floors');
-        $hasMenuSelling   = Schema::hasColumn('menu_items', 'selling_price');
-        $hasMenuSku       = Schema::hasColumn('menu_items', 'sku');
+        $hasMenuSelling = Schema::hasColumn('menu_items', 'selling_price');$hasMenuSku     = Schema::hasColumn('menu_items', 'sku');
 
         $menuCols = ['id', 'name'];
-        if ($hasMenuSku) {
-            $menuCols[] = 'sku';
+        if ($hasMenuSku) {$menuCols[] = 'sku';
         }
-        $menuCols[] = $hasMenuSelling ? 'selling_price' : 'price';
+        $menuCols[] =$hasMenuSelling ? 'selling_price' : 'price';
 
         $relations = [
             'branch:id,name,code',
+            'table:id,floor_id,number,status',
+            'table.floor:id,branch_id,name',
             'shift:id,branch_id,user_id,status',
             'user:id,name',
             'items.menuItem:' . implode(',', $menuCols),
         ];
-
-        if ($hasTableBranchId) {
-            $relations[] = 'table:id,branch_id,table_number,status';
-        } elseif ($hasTableFloorId) {
-            $relations[] = 'table:id,floor_id,table_number,status';
-            $relations[] = 'table.floor:id,branch_id,name';
-        } else {
-            $relations[] = 'table:id,table_number,status';
-        }
 
         if (Schema::hasColumn('orders', 'sales_mode_id') && Schema::hasTable('sales_modes')) {
             $smCols = Schema::hasColumn('sales_modes', 'code') ? 'id,name,code' : 'id,name';
@@ -56,71 +45,46 @@ class OrderController extends Controller
         $query = Order::with($relations);
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search =$request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('order_number', 'like', "%{$search}%")
-                  ->orWhereHas('table', fn($t) => $t->where('table_number', 'like', "%{$search}%"));
+                $q->where('order_number', 'like', "\%{$search}%")
+                  ->orWhereHas('table', fn($t) => $t->where('number', 'like', "\%{$search}%"));
             });
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $query->where('status',$request->status);
         }
 
         if ($request->filled('branch_id')) {
-            $query->where('branch_id', $request->branch_id);
+            $query->where('branch_id',$request->branch_id);
         }
 
         if ($request->filled('order_type')) {
-            $query->where('order_type', $request->order_type);
+            $query->where('order_type',$request->order_type);
         }
 
-        $orders = $query->latest()->paginate(10)->withQueryString();
+        $orders =$query->latest()->paginate(10)->withQueryString();
 
         $salesModes = Schema::hasTable('sales_modes')
-            ? SalesMode::when(Schema::hasColumn('sales_modes', 'is_active'), fn($q) => $q->where('is_active', true))->get()
+            ? SalesMode::when(Schema::hasColumn('sales_modes', 'is_active'), fn($q) =>$q->where('is_active', true))->get()
             : collect([]);
 
-        // Ambil daftar meja beserta branch_id (baik langsung di tables maupun via floors)
-        if ($hasTableBranchId) {
-            $tables = Table::when(Schema::hasColumn('tables', 'is_active'), fn($q) => $q->where('is_active', true))
-                ->select('id', 'branch_id', 'table_number', 'status')
-                ->orderBy('table_number')
-                ->get();
-        } elseif ($hasTableFloorId) {
-            $tables = Table::query()
-                ->leftJoin('floors', 'tables.floor_id', '=', 'floors.id')
-                ->when(Schema::hasColumn('tables', 'is_active'), fn($q) => $q->where('tables.is_active', true))
-                ->select(
-                    'tables.id',
-                    'tables.floor_id',
-                    'floors.branch_id as branch_id',
-                    'floors.name as floor_name',
-                    'tables.table_number',
-                    'tables.status'
-                )
-                ->orderBy('floors.name')
-                ->orderBy('tables.table_number')
-                ->get();
-        } else {
-            $tables = Table::when(Schema::hasColumn('tables', 'is_active'), fn($q) => $q->where('is_active', true))
-                ->select('id', 'table_number', 'status')
-                ->orderBy('table_number')
-                ->get();
-        }
+        $tables = Table::with('floor:id,branch_id,name')
+            ->select('id', 'floor_id', 'number', 'capacity', 'status')
+            ->orderBy('number')
+            ->get();
 
         $menuSelect = ['id', 'name'];
-        if ($hasMenuSku) {
-            $menuSelect[] = 'sku';
+        if ($hasMenuSku) {$menuSelect[] = 'sku';
         }
-        $menuSelect[] = $hasMenuSelling ? 'selling_price' : 'price as selling_price';
+        $menuSelect[] =$hasMenuSelling ? 'selling_price' : 'price as selling_price';
 
-        $menuItems = MenuItem::when(Schema::hasColumn('menu_items', 'is_active'), fn($q) => $q->where('is_active', true))
+        $menuItems = MenuItem::when(Schema::hasColumn('menu_items', 'is_active'), fn($q) =>$q->where('is_active', true))
             ->select($menuSelect)
             ->orderBy('name')
             ->get();
 
-        // Daftar cabang yang sedang memiliki shift kasir OPEN
         $openShiftBranchIds = Shift::where('status', 'OPEN')
             ->pluck('branch_id')
             ->unique()
@@ -139,7 +103,7 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated =$request->validate([
             'branch_id'            => 'required|exists:branches,id',
             'order_type'           => 'required|in:DINE_IN,TAKE_AWAY,DELIVERY_AGGREGATOR',
             'sales_mode_id'        => 'nullable|integer',
@@ -160,11 +124,10 @@ class OrderController extends Controller
             ]);
         }
 
-        // Prioritaskan shift OPEN milik user login di cabang tersebut, fallback ke shift OPEN aktif cabang
-        $userId = $request->user()?->id;
-        $activeShift = Shift::where('branch_id', $validated['branch_id'])
+        $userId =$request->user()?->id;
+        $activeShift = Shift::where('branch_id',$validated['branch_id'])
             ->where('status', 'OPEN')
-            ->when($userId, fn($q) => $q->orderByRaw('CASE WHEN user_id = ? THEN 0 ELSE 1 END', [$userId]))
+            ->when($userId, fn($q) =>$q->orderByRaw('CASE WHEN user_id = ? THEN 0 ELSE 1 END', [$userId]))
             ->latest('opened_at')
             ->first();
 
@@ -174,19 +137,16 @@ class OrderController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($validated, $activeShift, $userId) {
-            $subtotal = 0;
-            foreach ($validated['items'] as $item) {
-                $subtotal += ((int) $item['qty'] * (float) $item['unit_price']);
+        DB::transaction(function () use ($validated,$activeShift, $userId) {$subtotal = 0;
+            foreach ($validated['items'] as $item) {$subtotal += ((int) $item['qty'] * (float)$item['unit_price']);
             }
 
-            $discountAmount      = min((float) ($validated['discount_amount'] ?? 0), $subtotal);
-            $netSubtotal         = max(0, $subtotal - $discountAmount);
-            $applyService        = $validated['apply_service'] ?? true;
-            $applyTax            = $validated['apply_tax'] ?? true;
+            $discountAmount      = min((float) ($validated['discount_amount'] ?? 0), $subtotal);$netSubtotal         = max(0, $subtotal -$discountAmount);
+            $applyService        =$validated['apply_service'] ?? true;
+            $applyTax            =$validated['apply_tax'] ?? true;
             $serviceChargeAmount = $applyService ? round($netSubtotal * 0.05, 2) : 0;
-            $taxAmount           = $applyTax ? round(($netSubtotal + $serviceChargeAmount) * 0.10, 2) : 0;
-            $grandTotal          = round($netSubtotal + $serviceChargeAmount + $taxAmount, 2);
+            $taxAmount           =$applyTax ? round(($netSubtotal +$serviceChargeAmount) * 0.10, 2) : 0;
+            $grandTotal          = round($netSubtotal + $serviceChargeAmount +$taxAmount, 2);
 
             $orderPayload = [
                 'branch_id'             => $validated['branch_id'],
@@ -196,32 +156,47 @@ class OrderController extends Controller
                 'order_type'            => $validated['order_type'],
                 'status'                => 'PENDING',
                 'subtotal'              => round($subtotal, 2),
-                'discount_amount'       => round($discountAmount, 2),
-                'tax_amount'            => $taxAmount,
+                'discount_amount'       => round($discountAmount, 2), 'tax_amount'            =>$taxAmount,
                 'service_charge_amount' => $serviceChargeAmount,
                 'grand_total'           => $grandTotal,
                 'user_id'               => $userId ?? $activeShift->user_id ?? 1,
             ];
 
             if (!empty($validated['sales_mode_id']) && Schema::hasColumn('orders', 'sales_mode_id')) {
-                $orderPayload['sales_mode_id'] = $validated['sales_mode_id'];
+                $orderPayload['sales_mode_id'] =$validated['sales_mode_id'];
             }
 
             $order = Order::create($orderPayload);
 
-            $hasItemStatus = Schema::hasColumn('order_items', 'status');
+            $itemColumns = Schema::getColumnListing('order_items');
 
-            foreach ($validated['items'] as $item) {
+            foreach ($validated['items'] as $item) {$qty       = (int) $item['qty'];$unitPrice = (float) $item['unit_price'];$lineTotal = round($qty * $unitPrice, 2);
+
                 $itemPayload = [
                     'menu_item_id' => $item['menu_item_id'],
-                    'qty'          => (int) $item['qty'],
-                    'unit_price'   => (float) $item['unit_price'],
-                    'subtotal'     => round((int) $item['qty'] * (float) $item['unit_price'], 2),
-                    'notes'        => $item['notes'] ?? null,
                 ];
 
-                if ($hasItemStatus) {
-                    $itemPayload['status'] = 'PENDING';
+                if (in_array('qty', $itemColumns)) {
+                    $itemPayload['qty'] =$qty;
+                } elseif (in_array('quantity', $itemColumns)) {
+                    $itemPayload['quantity'] =$qty;
+                }
+
+                if (in_array('unit_price', $itemColumns)) {
+                    $itemPayload['unit_price'] =$unitPrice;
+                } elseif (in_array('price', $itemColumns)) {
+                    $itemPayload['price'] =$unitPrice;
+                }
+
+                if (in_array('subtotal', $itemColumns)) {
+                    $itemPayload['subtotal'] =$lineTotal;
+                }
+
+                if (in_array('notes', $itemColumns)) {
+                    $itemPayload['notes'] =$item['notes'] ?? null;
+                }
+
+                if (in_array('status', $itemColumns)) {$itemPayload['status'] = 'PENDING';
                 }
 
                 $order->items()->create($itemPayload);
@@ -235,9 +210,9 @@ class OrderController extends Controller
         return redirect()->back()->with('success', 'Order transaksi POS berhasil dibuat & dikirim ke antrean dapur.');
     }
 
-    public function updateStatus(Request $request, Order $order)
+    public function updateStatus(Request $request, Order$order)
     {
-        $validated = $request->validate([
+        $validated =$request->validate([
             'status'         => 'required|in:PENDING,IN_KITCHEN,SERVED,PAID,CANCELLED',
             'payment_method' => 'nullable|in:CASH,QRIS,DEBIT_CARD,CREDIT_CARD,TRANSFER,E_WALLET',
             'amount_paid'    => 'nullable|numeric|min:0',
@@ -249,51 +224,43 @@ class OrderController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($order, $validated, $request) {
-            $order->update(['status' => $validated['status']]);
+        DB::transaction(function () use ($order, $validated,$request) {
+            $order->update(['status' =>$validated['status']]);
 
-            // Catat pembayaran ke tabel payments saat order dilunasi (PAID)
             if ($validated['status'] === 'PAID' && Schema::hasTable('payments')) {
-                $paymentColumns = Schema::getColumnListing('payments');
-                $paymentData    = [
+                $paymentColumns = Schema::getColumnListing('payments');$paymentData    = [
                     'order_id'   => $order->id,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
 
-                $method = $validated['payment_method'] ?? 'CASH';
+                $method =$validated['payment_method'] ?? 'CASH';
                 if (in_array('payment_method', $paymentColumns)) {
-                    $paymentData['payment_method'] = $method;
+                    $paymentData['payment_method'] =$method;
                 } elseif (in_array('method', $paymentColumns)) {
-                    $paymentData['method'] = $method;
+                    $paymentData['method'] =$method;
                 }
 
                 if (in_array('amount', $paymentColumns)) {
-                    $paymentData['amount'] = (float) $order->grand_total;
+                    $paymentData['amount'] = (float)$order->grand_total;
                 }
-                if (in_array('amount_tendered', $paymentColumns)) {
-                    $paymentData['amount_tendered'] = (float) ($validated['amount_paid'] ?? $order->grand_total);
+                if (in_array('amount_tendered', $paymentColumns)) {$paymentData['amount_tendered'] = (float) ($validated['amount_paid'] ?? $order->grand_total);
                 }
                 if (in_array('change_amount', $paymentColumns)) {
-                    $paid = (float) ($validated['amount_paid'] ?? $order->grand_total);
-                    $paymentData['change_amount'] = max(0, round($paid - (float) $order->grand_total, 2));
+                    $paid = (float) ($validated['amount_paid'] ?? $order->grand_total);$paymentData['change_amount'] = max(0, round($paid - (float)$order->grand_total, 2));
                 }
-                if (in_array('status', $paymentColumns)) {
-                    $paymentData['status'] = 'PAID';
+                if (in_array('status', $paymentColumns)) {$paymentData['status'] = 'PAID';
                 }
-                if (in_array('paid_at', $paymentColumns)) {
-                    $paymentData['paid_at'] = now();
+                if (in_array('paid_at', $paymentColumns)) {$paymentData['paid_at'] = now();
                 }
-                if (in_array('user_id', $paymentColumns)) {
-                    $paymentData['user_id'] = $request->user()?->id ?? $order->user_id;
+                if (in_array('user_id', $paymentColumns)) {$paymentData['user_id'] = $request->user()?->id ?? $order->user_id;
                 }
 
                 DB::table('payments')->insert($paymentData);
             }
 
-            // Kosongkan meja jika order selesai (PAID) atau dibatalkan (CANCELLED) dan tidak ada order aktif lain di meja tsb
-            if (in_array($validated['status'], ['PAID', 'CANCELLED']) && $order->table_id) {
-                $hasOtherActiveOrder = Order::where('table_id', $order->table_id)
+            if (in_array($validated['status'], ['PAID', 'CANCELLED']) &&$order->table_id) {
+                $hasOtherActiveOrder = Order::where('table_id',$order->table_id)
                     ->where('id', '!=', $order->id)
                     ->whereNotIn('status', ['PAID', 'CANCELLED'])
                     ->exists();

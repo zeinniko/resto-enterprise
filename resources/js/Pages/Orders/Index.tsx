@@ -7,12 +7,14 @@ import {
 
 interface Branch { id: number; name: string; code: string; }
 interface SalesMode { id: number; name: string; code?: string; }
+interface Floor { id: number; branch_id: number; name: string; }
 interface Table {
   id: number;
-  branch_id?: number | null;
-  floor_name?: string | null;
-  table_number: string;
+  floor_id: number;
+  number: string;
+  capacity?: number;
   status: string;
+  floor?: Floor | null;
 }
 interface MenuItem { id: number; name: string; sku?: string; selling_price: number | string; }
 
@@ -134,14 +136,13 @@ export default function OrdersIndex({
   const filteredTables = useMemo(() => {
     if (!createForm.data.branch_id) return tables;
     return tables.filter(
-      (t) => t.branch_id == null || Number(t.branch_id) === Number(createForm.data.branch_id)
+      (t) => Number(t.floor?.branch_id) === Number(createForm.data.branch_id)
     );
   }, [createForm.data.branch_id, tables]);
-  
+
   const branchHasOpenShift =
     !createForm.data.branch_id || openShiftBranchIds.includes(Number(createForm.data.branch_id));
 
-  // Kalkulasi pratinjau total order
   const summary = useMemo(() => {
     const subtotal = createForm.data.items.reduce(
       (acc, row) => acc + Number(row.qty || 0) * Number(row.unit_price || 0),
@@ -399,7 +400,7 @@ export default function OrdersIndex({
                         {o.sales_mode?.name || ORDER_TYPE_LABEL[o.order_type] || o.order_type}
                       </span>
                       <div className="text-[11px] font-semibold text-slate-600 mt-0.5">
-                        {o.table ? `Meja ${o.table.table_number}` : 'Tanpa Meja'}
+                        {o.table ? `Meja ${o.table.number}` : 'Tanpa Meja'}
                       </div>
                     </td>
 
@@ -614,7 +615,7 @@ export default function OrdersIndex({
                       <option value="">Pilih Meja</option>
                       {filteredTables.map((t) => (
                         <option key={t.id} value={t.id}>
-                          Meja {t.table_number} ({t.status})
+                          Meja {t.number}{t.floor?.name ? ` - ${t.floor.name}` : ''} ({t.status})
                         </option>
                       ))}
                     </select>
@@ -636,7 +637,7 @@ export default function OrdersIndex({
                     <option value="">Pilih Meja</option>
                     {filteredTables.map((t) => (
                       <option key={t.id} value={t.id}>
-                        Meja {t.table_number}{t.floor_name ? ` - ${t.floor_name}` : ''} ({t.status})
+                        Meja {t.number}{t.floor?.name ? ` - ${t.floor.name}` : ''} ({t.status})
                       </option>
                     ))}
                   </select>
@@ -831,7 +832,7 @@ export default function OrdersIndex({
                   <div className="text-[10px] font-bold text-slate-400 uppercase">Tipe / Meja</div>
                   <div className="font-semibold text-slate-800 mt-0.5">
                     {ORDER_TYPE_LABEL[viewingOrder.order_type]}{' '}
-                    {viewingOrder.table ? `(Meja ${viewingOrder.table.table_number})` : ''}
+                    {viewingOrder.table ? `(Meja ${viewingOrder.table.number})` : ''}
                   </div>
                 </div>
                 <div>
