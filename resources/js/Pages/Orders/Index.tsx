@@ -7,7 +7,13 @@ import {
 
 interface Branch { id: number; name: string; code: string; }
 interface SalesMode { id: number; name: string; code?: string; }
-interface Table { id: number; branch_id: number; table_number: string; status: string; }
+interface Table {
+  id: number;
+  branch_id?: number | null;
+  floor_name?: string | null;
+  table_number: string;
+  status: string;
+}
 interface MenuItem { id: number; name: string; sku?: string; selling_price: number | string; }
 
 interface OrderItem {
@@ -127,9 +133,11 @@ export default function OrdersIndex({
 
   const filteredTables = useMemo(() => {
     if (!createForm.data.branch_id) return tables;
-    return tables.filter((t) => t.branch_id === Number(createForm.data.branch_id));
+    return tables.filter(
+      (t) => t.branch_id == null || Number(t.branch_id) === Number(createForm.data.branch_id)
+    );
   }, [createForm.data.branch_id, tables]);
-
+  
   const branchHasOpenShift =
     !createForm.data.branch_id || openShiftBranchIds.includes(Number(createForm.data.branch_id));
 
@@ -628,7 +636,7 @@ export default function OrdersIndex({
                     <option value="">Pilih Meja</option>
                     {filteredTables.map((t) => (
                       <option key={t.id} value={t.id}>
-                        Meja {t.table_number} ({t.status})
+                        Meja {t.table_number}{t.floor_name ? ` - ${t.floor_name}` : ''} ({t.status})
                       </option>
                     ))}
                   </select>

@@ -17,17 +17,36 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
+        $hasTableBranchId = Schema::hasColumn('tables', 'branch_id');
+        $hasTableFloorId  = Schema::hasColumn('tables', 'floor_id') && Schema::hasTable('floors');
+        $hasMenuSelling   = Schema::hasColumn('menu_items', 'selling_price');
+        $hasMenuSku       = Schema::hasColumn('menu_items', 'sku');
+
+        $menuCols = ['id', 'name'];
+        if ($hasMenuSku) {
+            $menuCols[] = 'sku';
+        }
+        $menuCols[] = $hasMenuSelling ? 'selling_price' : 'price';
+
         $relations = [
             'branch:id,name,code',
-            'table:id,branch_id,table_number,status',
             'shift:id,branch_id,user_id,status',
             'user:id,name',
-            'items.menuItem:id,name,sku,selling_price',
+            'items.menuItem:' . implode(',', $menuCols),
         ];
 
-        $hasSalesModeColumn = Schema::hasColumn('orders', 'sales_mode_id');
-        if ($hasSalesModeColumn) {
-            $relations[] = 'salesMode:id,name,code';
+        if ($hasTableBranchId) {
+            $relations[] = 'table:id,branch_id,table_number,status';
+        } elseif ($hasTableFloorId) {
+            $relations[] = 'table:id,floor_id,table_number,status';
+            $relations[] = 'table.floor:id,branch_id,name';
+        } else {
+            $relations[] = 'table:id,table_number,status';
+        }
+
+        if (Schema::hasColumn('orders', 'sales_mode_id') && Schema::hasTable('sales_modes')) {
+            $smCols = Schema::hasColumn('sales_modes', 'code') ? 'id,name,code' : 'id,name';
+            $relations[] = "salesMode:{$smCols}";
         }
 
         if (Schema::hasTable('payments')) {
@@ -59,8 +78,47 @@ class OrderController extends Controller
         $orders = $query->latest()->paginate(10)->withQueryString();
 
         $salesModes = Schema::hasTable('sales_modes')
-            ? SalesMode::where('is_active', true)->get()
+            ? SalesMode::when(Schema::hasColumn('sales_modes', 'is_active'), fn($q) => $q->where('is_active', true))->get()
             : collect([]);
+
+        // Ambil daftar meja beserta branch_id (baik langsung di tables maupun via floors)
+        if ($hasTableBranchId) {
+            $tables = Table::when(Schema::hasColumn('tables', 'is_active'), fn($q) => $q->where('is_active', true))
+                ->select('id', 'branch_id', 'table_number', 'status')
+                ->orderBy('table_number')
+                ->get();
+        } elseif ($hasTableFloorId) {
+            $tables = Table::query()
+                ->leftJoin('floors', 'tables.floor_id', '=', 'floors.id')
+                ->when(Schema::hasColumn('tables', 'is_active'), fn($q) => $q->where('tables.is_active', true))
+                ->select(
+                    'tables.id',
+                    'tables.floor_id',
+                    'floors.branch_id as branch_id',
+                    'floors.name as floor_name',
+                    'tables.table_number',
+                    'tables.status'
+                )
+                ->orderBy('floors.name')
+                ->orderBy('tables.table_number')
+                ->get();
+        } else {
+            $tables = Table::when(Schema::hasColumn('tables', 'is_active'), fn($q) => $q->where('is_active', true))
+                ->select('id', 'table_number', 'status')
+                ->orderBy('table_number')
+                ->get();
+        }
+
+        $menuSelect = ['id', 'name'];
+        if ($hasMenuSku) {
+            $menuSelect[] = 'sku';
+        }
+        $menuSelect[] = $hasMenuSelling ? 'selling_price' : 'price as selling_price';
+
+        $menuItems = MenuItem::when(Schema::hasColumn('menu_items', 'is_active'), fn($q) => $q->where('is_active', true))
+            ->select($menuSelect)
+            ->orderBy('name')
+            ->get();
 
         // Daftar cabang yang sedang memiliki shift kasir OPEN
         $openShiftBranchIds = Shift::where('status', 'OPEN')
@@ -72,8 +130,8 @@ class OrderController extends Controller
             'orders'             => $orders,
             'branches'           => Branch::where('is_active', true)->select('id', 'name', 'code')->orderBy('name')->get(),
             'salesModes'         => $salesModes,
-            'tables'             => Table::where('is_active', true)->select('id', 'branch_id', 'table_number', 'status')->orderBy('table_number')->get(),
-            'menuItems'          => MenuItem::where('is_active', true)->select('id', 'name', 'sku', 'selling_price')->orderBy('name')->get(),
+            'tables'             => $tables,
+            'menuItems'          => $menuItems,
             'openShiftBranchIds' => $openShiftBranchIds,
             'filters'            => $request->only(['search', 'status', 'branch_id', 'order_type']),
         ]);
